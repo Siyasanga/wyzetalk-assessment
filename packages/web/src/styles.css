@@ -55,6 +55,29 @@ body {
 
 .layout-single {
   grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.login-panel {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-heading {
+  margin: 0;
+  font-size: 22px;
+  text-align: center;
 }
 
 @media (max-width: 760px) {

@@ -1,16 +1,25 @@
-import type { TicketDto } from '@wyzetalk/db/types';
-import { useMemo, useRef, useState } from 'react';
-import { Dashboard } from './features/dashboard/Dashboard';
-import { LoginForm } from './features/auth/LoginForm';
-import { createAuthApi } from './features/auth/auth.api';
-import { CreateTicketForm } from './features/tickets/CreateTicketForm';
-import { TicketDetail } from './features/tickets/TicketDetail';
-import { TicketFilters } from './features/tickets/TicketFilters';
-import { TicketList } from './features/tickets/TicketList';
-import { type TicketApi, type TicketQuery, createTicketApi } from './features/tickets/ticket.api';
-import { useTickets } from './features/tickets/useTickets';
-import { API_BASE_URL, createApiClient } from './lib/api-client';
-import { type Session, clearSession, readSession, writeSession } from './lib/auth-storage';
+import type { TicketDto } from "@wyzetalk/db/types";
+import { useMemo, useRef, useState } from "react";
+import { Dashboard } from "./features/dashboard/Dashboard";
+import { LoginForm } from "./features/auth/LoginForm";
+import { createAuthApi } from "./features/auth/auth.api";
+import { CreateTicketForm } from "./features/tickets/CreateTicketForm";
+import { TicketDetail } from "./features/tickets/TicketDetail";
+import { TicketFilters } from "./features/tickets/TicketFilters";
+import { TicketList } from "./features/tickets/TicketList";
+import {
+  type TicketApi,
+  type TicketQuery,
+  createTicketApi,
+} from "./features/tickets/ticket.api";
+import { useTickets } from "./features/tickets/useTickets";
+import { API_BASE_URL, createApiClient } from "./lib/api-client";
+import {
+  type Session,
+  clearSession,
+  readSession,
+  writeSession,
+} from "./lib/auth-storage";
 
 /**
  * Screens, as a tagged union rather than a router.
@@ -20,10 +29,10 @@ import { type Session, clearSession, readSession, writeSession } from './lib/aut
  * deep linking is ever needed.
  */
 type Screen =
-  | { name: 'dashboard' }
-  | { name: 'requests' }
-  | { name: 'new' }
-  | { name: 'detail'; ticket: TicketDto };
+  | { name: "dashboard" }
+  | { name: "requests" }
+  | { name: "new" }
+  | { name: "detail"; ticket: TicketDto };
 
 export function App() {
   const [session, setSession] = useState<Session | null>(() => readSession());
@@ -51,11 +60,9 @@ export function App() {
 
   if (!session) {
     return (
-      <div className="page">
-        <header className="page-header">
-          <h1>Service Requests</h1>
-        </header>
-        <main className="layout layout-single">
+      <div className="login-page">
+        <div className="login-panel">
+          <h1 className="login-heading">Service Requests</h1>
           <LoginForm
             api={authApi}
             onAuthenticated={(next) => {
@@ -63,7 +70,7 @@ export function App() {
               setSession(next);
             }}
           />
-        </main>
+        </div>
       </div>
     );
   }
@@ -87,19 +94,20 @@ type SignedInProps = {
 };
 
 function SignedIn({ api, session, onSignOut }: SignedInProps) {
-  const [screen, setScreen] = useState<Screen>({ name: 'dashboard' });
-  const { tickets, total, stats, query, isLoading, error, setQuery, refresh } = useTickets(api);
+  const [screen, setScreen] = useState<Screen>({ name: "dashboard" });
+  const { tickets, total, stats, query, isLoading, error, setQuery, refresh } =
+    useTickets(api);
 
   /** A dashboard tile applies its filter and drops you on the list. */
   function drillDown(next: TicketQuery): void {
     setQuery(next);
-    setScreen({ name: 'requests' });
+    setScreen({ name: "requests" });
   }
 
-  const tabs: Array<{ id: Screen['name']; label: string }> = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'requests', label: 'Requests' },
-    { id: 'new', label: 'New request' },
+  const tabs: Array<{ id: Screen["name"]; label: string }> = [
+    { id: "dashboard", label: "Dashboard" },
+    { id: "requests", label: "Requests" },
+    { id: "new", label: "New request" },
   ];
 
   return (
@@ -121,8 +129,8 @@ function SignedIn({ api, session, onSignOut }: SignedInProps) {
           <button
             key={tab.id}
             type="button"
-            className={screen.name === tab.id ? 'tab tab-active' : 'tab'}
-            aria-current={screen.name === tab.id ? 'page' : undefined}
+            className={screen.name === tab.id ? "tab tab-active" : "tab"}
+            aria-current={screen.name === tab.id ? "page" : undefined}
             onClick={() => setScreen({ name: tab.id } as Screen)}
           >
             {tab.label}
@@ -136,13 +144,13 @@ function SignedIn({ api, session, onSignOut }: SignedInProps) {
         </p>
       ) : null}
 
-      {screen.name === 'dashboard' ? (
+      {screen.name === "dashboard" ? (
         <main className="layout layout-single-wide">
           <Dashboard stats={stats} onDrillDown={drillDown} />
         </main>
       ) : null}
 
-      {screen.name === 'requests' ? (
+      {screen.name === "requests" ? (
         <main className="layout">
           <TicketList
             tickets={tickets}
@@ -150,35 +158,35 @@ function SignedIn({ api, session, onSignOut }: SignedInProps) {
             isLoading={isLoading}
             api={api}
             onChanged={refresh}
-            onSelect={(ticket) => setScreen({ name: 'detail', ticket })}
+            onSelect={(ticket) => setScreen({ name: "detail", ticket })}
           />
           <TicketFilters query={query} onChange={setQuery} />
         </main>
       ) : null}
 
-      {screen.name === 'new' ? (
+      {screen.name === "new" ? (
         <main className="layout layout-single">
           <CreateTicketForm
             api={api}
             onCreated={(ticket) => {
               refresh();
-              setScreen({ name: 'detail', ticket });
+              setScreen({ name: "detail", ticket });
             }}
           />
         </main>
       ) : null}
 
-      {screen.name === 'detail' ? (
+      {screen.name === "detail" ? (
         <main className="layout layout-single-wide">
           <TicketDetail
             ticket={screen.ticket}
             api={api}
             onChanged={(updated) => {
               // Keep the open screen in step with what the API just returned.
-              setScreen({ name: 'detail', ticket: updated });
+              setScreen({ name: "detail", ticket: updated });
               refresh();
             }}
-            onBack={() => setScreen({ name: 'requests' })}
+            onBack={() => setScreen({ name: "requests" })}
           />
         </main>
       ) : null}
