@@ -1,7 +1,12 @@
+import { disableCommandBuffering } from '@wyzetalk/db';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { API_PREFIX, createApp } from './app.js';
 import { signAccessToken } from './lib/jwt.js';
+
+// These tests exercise HTTP plumbing only: they never open a connection, so a
+// query must fail fast rather than sit in Mongoose's buffer.
+disableCommandBuffering();
 
 const app = createApp();
 
