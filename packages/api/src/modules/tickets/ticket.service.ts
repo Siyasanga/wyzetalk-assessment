@@ -120,6 +120,8 @@ export function createTicketService(
       sortOrder: query.sortOrder,
       ...(query.status ? { status: query.status } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
+      ...(query.category ? { category: query.category } : {}),
+      ...(query.overdue ? { overdue: true } : {}),
       ...(query.assigneeId
         ? { assigneeId: query.assigneeId === 'unassigned' ? 'unassigned' : toUserId(query.assigneeId) }
         : {}),
@@ -172,6 +174,7 @@ export function createTicketService(
       title: input.title,
       description: input.description,
       priority: input.priority,
+      category: input.category,
       requesterId,
       assigneeId,
     });

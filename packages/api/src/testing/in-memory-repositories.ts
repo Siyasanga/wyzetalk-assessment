@@ -25,6 +25,8 @@ import {
   TICKET_PRIORITY_RANK,
   TICKET_STATUS_RANK,
   buildPage,
+  dueAtFor,
+  isOverdue,
   emptyTicketStats,
   normalizeEmail,
   toTicketId,
@@ -181,8 +183,10 @@ export function createInMemoryTicketRepository(): InMemoryTicketRepository {
       description: input.description,
       status: 'open',
       priority: input.priority,
+      category: input.category,
       requesterId: input.requesterId,
       assigneeId: input.assigneeId,
+      dueAt: dueAtFor(input.priority, now),
       resolvedAt: null,
       closedAt: null,
       createdAt: now,
@@ -240,6 +244,8 @@ function rank(ticket: Ticket, filter: TicketListFilter): number {
       return TICKET_STATUS_RANK[ticket.status];
     case 'updatedAt':
       return ticket.updatedAt.getTime();
+    case 'dueAt':
+      return ticket.dueAt.getTime();
     default:
       return ticket.createdAt.getTime();
   }
