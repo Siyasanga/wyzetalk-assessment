@@ -1,0 +1,26 @@
+{
+  "name": "wyzetalk-helpdesk",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/server build",
+    "dev": "pnpm --filter @wyzetalk/db build && pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/server dev",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "seed": "pnpm --filter @wyzetalk/server seed",
+    "clean": "pnpm -r exec rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
