@@ -14,12 +14,6 @@
           ]
         }
       ]
-    },
-    "build": {
-      "commands": ["pnpm --filter @wyzetalk/db build", "pnpm --filter @wyzetalk/api build"]
     }
-  },
-  "deploy": {
-    "startCommand": "pnpm --filter @wyzetalk/api start"
   }
 }
