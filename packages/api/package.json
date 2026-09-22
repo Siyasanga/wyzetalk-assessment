@@ -2,10 +2,11 @@
   "name": "@wyzetalk/api",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "type": "module",
   "main": "./dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx --conditions source watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",

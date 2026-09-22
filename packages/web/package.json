@@ -2,9 +2,11 @@
   "name": "@wyzetalk/web",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "npx serve -s dist -l $PORT",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -7,15 +7,19 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./types": {
+      "source": "./src/types/index.ts",
       "types": "./dist/types/index.d.ts",
       "default": "./dist/types/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
