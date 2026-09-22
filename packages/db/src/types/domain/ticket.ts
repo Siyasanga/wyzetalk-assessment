@@ -15,6 +15,24 @@ export type TicketStatus = (typeof TICKET_STATUSES)[number];
 export const TICKET_PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
 export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 
+/**
+ * The kind of help being asked for. Fixed list rather than free text so the
+ * dashboard can group by it without cleaning up typos.
+ */
+export const TICKET_CATEGORIES = [
+  'hardware',
+  'software',
+  'network',
+  'access',
+  'facilities',
+  'other',
+] as const;
+export type TicketCategory = (typeof TICKET_CATEGORIES)[number];
+
+export function isTicketCategory(value: unknown): value is TicketCategory {
+  return typeof value === 'string' && (TICKET_CATEGORIES as readonly string[]).includes(value);
+}
+
 export function isTicketStatus(value: unknown): value is TicketStatus {
   return typeof value === 'string' && (TICKET_STATUSES as readonly string[]).includes(value);
 }
@@ -29,10 +47,13 @@ export type Ticket = Timestamped & {
   readonly description: string;
   readonly status: TicketStatus;
   readonly priority: TicketPriority;
+  readonly category: TicketCategory;
   /** Who raised it. Immutable for the life of the ticket. */
   readonly requesterId: UserId;
   /** The agent currently working it, or `null` while unassigned. */
   readonly assigneeId: UserId | null;
+  /** When this should have been dealt with, derived from priority at creation. */
+  readonly dueAt: Date;
   readonly resolvedAt: Date | null;
   readonly closedAt: Date | null;
 }
@@ -71,10 +92,41 @@ export const TICKET_STATUS_RANK: Record<TicketStatus, number> = {
 
 export const DEFAULT_TICKET_STATUS: TicketStatus = 'open';
 export const DEFAULT_TICKET_PRIORITY: TicketPriority = 'medium';
+export const DEFAULT_TICKET_CATEGORY: TicketCategory = 'other';
+
+/**
+ * How long each priority gets before it counts as overdue, in hours.
+ *
+ * This is the response target, not a contractual SLA — it exists so the
+ * dashboard can show a real "overdue" number instead of guessing from age.
+ */
+export const TICKET_RESPONSE_HOURS: Record<TicketPriority, number> = {
+  urgent: 4,
+  high: 24,
+  medium: 72,
+  low: 168,
+};
+
+const HOUR_IN_MS = 60 * 60 * 1000;
+
+/** Due date for a new ticket. Pure, and takes `now` so tests never need a fake clock. */
+export function dueAtFor(priority: TicketPriority, now: Date = new Date()): Date {
+  return new Date(now.getTime() + TICKET_RESPONSE_HOURS[priority] * HOUR_IN_MS);
+}
+
+/**
+ * A ticket is overdue when it is still somebody's problem and its due date has
+ * passed. Resolved and closed tickets are never overdue, however late they were.
+ */
+export function isOverdue(ticket: Ticket, now: Date = new Date()): boolean {
+  return isActiveStatus(ticket.status) && ticket.dueAt.getTime() < now.getTime();
+}
 
 /** Statuses that still need somebody to act. */
+export const ACTIVE_TICKET_STATUSES = ['open', 'in_progress'] as const;
+
 export function isActiveStatus(status: TicketStatus): boolean {
-  return status === 'open' || status === 'in_progress';
+  return (ACTIVE_TICKET_STATUSES as readonly TicketStatus[]).includes(status);
 }
 
 export function canTransition(from: TicketStatus, to: TicketStatus): boolean {
@@ -101,11 +153,14 @@ export function applyStatusChange(ticket: Ticket, next: TicketStatus, now: Date 
   };
 }
 
-/** Aggregate counts over a set of tickets, for the dashboard header. */
+/** Everything the dashboard needs, in one payload. */
 export type TicketStats = {
   readonly total: number;
   readonly byStatus: Record<TicketStatus, number>;
   readonly byPriority: Record<TicketPriority, number>;
+  readonly byCategory: Record<TicketCategory, number>;
+  /** Still active, past its due date. */
+  readonly overdue: number;
   readonly unassigned: number;
 }
 
@@ -114,6 +169,8 @@ export function emptyTicketStats(): TicketStats {
     total: 0,
     byStatus: { open: 0, in_progress: 0, resolved: 0, closed: 0 },
     byPriority: { low: 0, medium: 0, high: 0, urgent: 0 },
+    byCategory: { hardware: 0, software: 0, network: 0, access: 0, facilities: 0, other: 0 },
+    overdue: 0,
     unassigned: 0,
   };
 }

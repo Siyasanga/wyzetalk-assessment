@@ -25,6 +25,14 @@ export async function disconnectFromDatabase(): Promise<void> {
   await mongoose.disconnect();
 }
 
+/**
+ * Test helper: makes queries reject immediately while disconnected instead of
+ * buffering for ten seconds, so a suite that never connects still finishes fast.
+ */
+export function disableCommandBuffering(): void {
+  mongoose.set('bufferCommands', false);
+}
+
 /** Wipes every collection. Test helper — refuses to run against a non-test database. */
 export async function clearDatabase(): Promise<void> {
   const { db, name } = mongoose.connection;

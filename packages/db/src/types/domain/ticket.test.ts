@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { isInvalidStatusTransitionError } from './errors.js';
 import {
   TICKET_STATUSES,
+  dueAtFor,
+  isOverdue,
   type Ticket,
   applyStatusChange,
   canTransition,
@@ -19,6 +21,8 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     description: 'Fans spin, screen stays black after the last update.',
     status: 'open',
     priority: 'high',
+    category: 'hardware',
+    dueAt: new Date('2026-01-02T09:00:00.000Z'),
     requesterId: toUserId('bbbbbbbbbbbbbbbbbbbbbbbb'),
     assigneeId: null,
     resolvedAt: null,
@@ -101,5 +105,33 @@ describe('applyStatusChange', () => {
 
     expect(original.status).toBe('open');
     expect(original.updatedAt).toEqual(now);
+  });
+});
+
+describe('overdue', () => {
+  const due = new Date('2026-01-10T09:00:00.000Z');
+  const before = new Date('2026-01-09T09:00:00.000Z');
+  const after = new Date('2026-01-11T09:00:00.000Z');
+
+  it('derives the due date from the priority, not from a stored flag', () => {
+    const raisedAt = new Date('2026-01-01T00:00:00.000Z');
+
+    // urgent 4h, high 24h, medium 72h, low 168h
+    expect(dueAtFor('urgent', raisedAt).toISOString()).toBe('2026-01-01T04:00:00.000Z');
+    expect(dueAtFor('high', raisedAt).toISOString()).toBe('2026-01-02T00:00:00.000Z');
+    expect(dueAtFor('low', raisedAt).toISOString()).toBe('2026-01-08T00:00:00.000Z');
+  });
+
+  it('is overdue only once the due date has passed', () => {
+    const active = ticket({ status: 'open', dueAt: due });
+
+    expect(isOverdue(active, before)).toBe(false);
+    expect(isOverdue(active, after)).toBe(true);
+  });
+
+  it('never counts a resolved or closed ticket as overdue, however late it was', () => {
+    expect(isOverdue(ticket({ status: 'resolved', dueAt: due }), after)).toBe(false);
+    expect(isOverdue(ticket({ status: 'closed', dueAt: due }), after)).toBe(false);
+    expect(isOverdue(ticket({ status: 'in_progress', dueAt: due }), after)).toBe(true);
   });
 });

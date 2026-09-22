@@ -1,10 +1,13 @@
 import {
+  DEFAULT_TICKET_CATEGORY,
   DEFAULT_TICKET_PRIORITY,
   DEFAULT_TICKET_STATUS,
+  TICKET_CATEGORIES,
   TICKET_PRIORITIES,
   TICKET_PRIORITY_RANK,
   TICKET_STATUSES,
   TICKET_STATUS_RANK,
+  type TicketCategory,
   type TicketPriority,
   type TicketStatus,
 } from '../types/domain/ticket.js';
@@ -16,8 +19,10 @@ export type TicketDocument = {
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
+  category: TicketCategory;
   requester: Types.ObjectId;
   assignee: Types.ObjectId | null;
+  dueAt: Date;
   resolvedAt: Date | null;
   closedAt: Date | null;
   /** Derived from `priority` / `status` on every write, purely so Mongo can sort meaningfully. */
@@ -43,8 +48,16 @@ const ticketSchema = new Schema<TicketDocument>(
       enum: TICKET_PRIORITIES,
       default: DEFAULT_TICKET_PRIORITY,
     },
+    category: {
+      type: String,
+      required: true,
+      enum: TICKET_CATEGORIES,
+      default: DEFAULT_TICKET_CATEGORY,
+      index: true,
+    },
     requester: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     assignee: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    dueAt: { type: Date, required: true },
     resolvedAt: { type: Date, default: null },
     closedAt: { type: Date, default: null },
     priorityRank: { type: Number, required: true, default: TICKET_PRIORITY_RANK[DEFAULT_TICKET_PRIORITY] },
@@ -60,5 +73,7 @@ ticketSchema.index({ requester: 1, createdAt: -1 });
 ticketSchema.index({ assignee: 1, status: 1 });
 // Sorting the queue by urgency.
 ticketSchema.index({ priorityRank: -1, createdAt: -1 });
+// The dashboard's overdue count: active tickets whose due date has passed.
+ticketSchema.index({ status: 1, dueAt: 1 });
 
 export const TicketModel = model<TicketDocument>('Ticket', ticketSchema);

@@ -1,11 +1,9 @@
 /**
- * Errors the domain itself can raise. They carry a stable `code` so the HTTP
- * layer can map them to a status without string-matching messages.
+ * Errors the domain itself can raise.
  *
- * They are plain `Error` objects built by factories rather than subclasses, so
- * there is nothing to `instanceof`: narrow with the guards at the bottom. The
- * brand symbol is what the guards actually test, so a foreign object that
- * happens to carry a `code` is never mistaken for one of ours.
+ * These are factory functions rather than a class hierarchy: callers identify
+ * them with the type guards below and with the stable `code`, so the HTTP layer
+ * can map one to a status without string-matching messages.
  */
 
 export type DomainErrorCode =
@@ -13,9 +11,8 @@ export type DomainErrorCode =
   | 'INVALID_STATUS_TRANSITION'
   | 'TICKET_NOT_ASSIGNABLE';
 
-const DOMAIN_ERROR = Symbol.for('@wyzetalk/db#DomainError');
-
 export type DomainError = Error & {
+  readonly isDomainError: true;
   readonly code: DomainErrorCode;
 };
 
@@ -25,49 +22,29 @@ export type InvalidStatusTransitionError = DomainError & {
   readonly to: string;
 };
 
-export type DomainErrorInit = {
-  code: DomainErrorCode;
-  message: string;
-  /** Kept for stack traces and logs, where the old class names still read well. */
-  name?: string;
-};
-
-export function domainError({ code, message, name = 'DomainError' }: DomainErrorInit): DomainError {
-  const error = new Error(message) as Error & { code: DomainErrorCode };
-  error.name = name;
-  error.code = code;
-
-  // Non-enumerable, so the brand stays out of serialized output.
-  Object.defineProperty(error, DOMAIN_ERROR, { value: true });
-
-  return error;
-}
-
-export function invalidIdError(value: unknown, kind: string): DomainError {
-  return domainError({
-    code: 'INVALID_ID',
-    message: `"${String(value)}" is not a valid ${kind}.`,
-    name: 'InvalidIdError',
-  });
-}
-
-export function invalidStatusTransitionError(from: string, to: string): InvalidStatusTransitionError {
-  const error = domainError({
-    code: 'INVALID_STATUS_TRANSITION',
-    message: `A ticket cannot move from "${from}" to "${to}".`,
-    name: 'InvalidStatusTransitionError',
-  }) as InvalidStatusTransitionError & { from: string; to: string };
-
-  error.from = from;
-  error.to = to;
-
-  return error;
+export function domainError(code: DomainErrorCode, message: string): DomainError {
+  return Object.assign(new Error(message), { isDomainError: true as const, code });
 }
 
 export function isDomainError(value: unknown): value is DomainError {
-  return value instanceof Error && DOMAIN_ERROR in value;
+  return value instanceof Error && (value as Partial<DomainError>).isDomainError === true;
 }
 
-export function isInvalidStatusTransitionError(value: unknown): value is InvalidStatusTransitionError {
+export function invalidIdError(value: unknown, kind: string): DomainError {
+  return domainError('INVALID_ID', `"${String(value)}" is not a valid ${kind}.`);
+}
+
+export function invalidStatusTransitionError(from: string, to: string): InvalidStatusTransitionError {
+  const error = domainError(
+    'INVALID_STATUS_TRANSITION',
+    `A ticket cannot move from "${from}" to "${to}".`,
+  );
+
+  return Object.assign(error, { code: 'INVALID_STATUS_TRANSITION' as const, from, to });
+}
+
+export function isInvalidStatusTransitionError(
+  value: unknown,
+): value is InvalidStatusTransitionError {
   return isDomainError(value) && value.code === 'INVALID_STATUS_TRANSITION';
 }

@@ -1,11 +1,19 @@
 import type { Page, PageRequest } from '../domain/common.js';
-import type { Ticket, TicketId, TicketPriority, TicketStats, TicketStatus } from '../domain/ticket.js';
+import type {
+  Ticket,
+  TicketCategory,
+  TicketId,
+  TicketPriority,
+  TicketStats,
+  TicketStatus,
+} from '../domain/ticket.js';
 import type { UserId } from '../domain/user.js';
 
 export type NewTicket = {
   readonly title: string;
   readonly description: string;
   readonly priority: TicketPriority;
+  readonly category: TicketCategory;
   readonly requesterId: UserId;
   readonly assigneeId: UserId | null;
 }
@@ -19,13 +27,15 @@ export type TicketPatch = {
   readonly title?: string;
   readonly description?: string;
   readonly priority?: TicketPriority;
+  readonly category?: TicketCategory;
+  readonly dueAt?: Date;
   readonly assigneeId?: UserId | null;
   readonly status?: TicketStatus;
   readonly resolvedAt?: Date | null;
   readonly closedAt?: Date | null;
 }
 
-export type TicketSortField = 'createdAt' | 'updatedAt' | 'priority' | 'status';
+export type TicketSortField = 'createdAt' | 'updatedAt' | 'priority' | 'status' | 'dueAt';
 
 /** `'unassigned'` matches tickets with no assignee. */
 export type AssigneeFilter = UserId | 'unassigned';
@@ -33,6 +43,9 @@ export type AssigneeFilter = UserId | 'unassigned';
 export type TicketListFilter = PageRequest & {
   readonly status?: TicketStatus;
   readonly priority?: TicketPriority;
+  readonly category?: TicketCategory;
+  /** Only tickets that are still active and past their due date. */
+  readonly overdue?: boolean;
   readonly assigneeId?: AssigneeFilter;
   readonly requesterId?: UserId;
   readonly q?: string;
