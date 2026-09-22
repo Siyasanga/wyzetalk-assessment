@@ -8,8 +8,8 @@
   },
   "scripts": {
     "build": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/api build && pnpm --filter @wyzetalk/web build",
-    "build:api": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/api build",
-    "build:web": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/web build",
+    "build:api": "pnpm --filter @wyzetalk/api build",
+    "build:web": "pnpm --filter @wyzetalk/web build",
     "clean": "pnpm -r exec rm -rf dist",
     "dev": "pnpm -r --parallel dev",
     "dev:api": "pnpm --filter @wyzetalk/api dev",
