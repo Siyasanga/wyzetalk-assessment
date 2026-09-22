@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Router as ExpressRouter } from 'express';
-import mongoose from 'mongoose';
+import { isDatabaseConnected } from '@wyzetalk/db';
 import { authRoutes } from '../modules/auth/auth.routes.js';
 import { ticketRoutes } from '../modules/tickets/ticket.routes.js';
 import { userRoutes } from '../modules/users/user.routes.js';
@@ -8,7 +8,7 @@ import { userRoutes } from '../modules/users/user.routes.js';
 export const apiRoutes: ExpressRouter = Router();
 
 apiRoutes.get('/health', (_req, res) => {
-  const connected = mongoose.connection.readyState === 1;
+  const connected = isDatabaseConnected();
 
   res.status(connected ? 200 : 503).json({
     status: connected ? 'ok' : 'degraded',

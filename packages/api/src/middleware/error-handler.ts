@@ -1,6 +1,6 @@
+import { describeDatabaseError } from '@wyzetalk/db';
 import { type ApiErrorDto, isDomainError, isInvalidStatusTransitionError } from '@wyzetalk/db/types';
 import type { NextFunction, Request, Response } from 'express';
-import mongoose from 'mongoose';
 import { ZodError } from 'zod';
 import { env } from '../config/env.js';
 import { isHttpError } from '../lib/http-errors.js';
@@ -48,21 +48,23 @@ function normalize(error: unknown): NormalizedError {
     return { status: 400, code: error.code, message: error.message };
   }
 
-  if (error instanceof mongoose.Error.CastError) {
-    return { status: 400, code: 'BAD_REQUEST', message: `"${String(error.value)}" is not a valid id.` };
-  }
+  // Driver errors are described by `@wyzetalk/db`, so nothing here imports mongoose.
+  const database = describeDatabaseError(error);
 
-  if (error instanceof mongoose.Error.ValidationError) {
-    const details: Record<string, string[]> = {};
-    for (const [path, issue] of Object.entries(error.errors)) {
-      details[path] = [issue.message];
+  if (database) {
+    switch (database.kind) {
+      case 'invalid_id':
+        return { status: 400, code: 'BAD_REQUEST', message: database.message };
+      case 'validation':
+        return {
+          status: 422,
+          code: 'VALIDATION_FAILED',
+          message: database.message,
+          ...(database.details ? { details: database.details } : {}),
+        };
+      case 'duplicate':
+        return { status: 409, code: 'CONFLICT', message: database.message };
     }
-    return { status: 422, code: 'VALIDATION_FAILED', message: 'The request failed validation.', details };
-  }
-
-  // Duplicate key on a unique index — two users with the same email, for instance.
-  if (typeof error === 'object' && error !== null && (error as { code?: number }).code === 11000) {
-    return { status: 409, code: 'CONFLICT', message: 'That record already exists.' };
   }
 
   return { status: 500, code: 'INTERNAL_ERROR', message: 'Something went wrong on our side.' };
