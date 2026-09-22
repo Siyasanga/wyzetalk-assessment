@@ -1,17 +1,20 @@
 /**
- * Development seed: an admin, an agent, two requesters and a handful of tickets
- * spread across the lifecycle. Idempotent — existing users are reused.
+ * Development seed: an admin, an agent, two requesters and a handful of requests
+ * spread across the lifecycle.
  *
- *   pnpm --filter @wyzetalk/server seed
+ * Re-runnable: users are reused, requests are replaced wholesale.
+ *
+ *   pnpm seed
  */
 
 import {
+  TicketModel,
   connectToDatabase,
   createMongoTicketRepository,
   createMongoUserRepository,
   disconnectFromDatabase,
 } from '@wyzetalk/db';
-import type { TicketPriority, TicketStatus, User, UserRole } from '@wyzetalk/db/types';
+import type { TicketCategory, TicketPriority, TicketStatus, User, UserRole } from '@wyzetalk/db/types';
 import { applyStatusChange } from '@wyzetalk/db/types';
 import { env } from '../config/env.js';
 import { hashPassword } from '../lib/password.js';
@@ -30,8 +33,11 @@ type SeedTicket = {
   title: string;
   description: string;
   priority: TicketPriority;
+  category: TicketCategory;
   status: TicketStatus;
   assign: boolean;
+  /** Backdates the due date so the dashboard has a real overdue number to show. */
+  overdue?: boolean;
 }
 
 const SEED_TICKETS: SeedTicket[] = [
@@ -39,13 +45,16 @@ const SEED_TICKETS: SeedTicket[] = [
     title: 'Cannot sign in to the staff portal',
     description: 'Password reset email never arrives, tried three times this morning.',
     priority: 'high',
+    category: 'access',
     status: 'open',
     assign: false,
+    overdue: true,
   },
   {
     title: 'Payslip PDF downloads blank',
     description: 'The March payslip opens as an empty document on both Chrome and Safari.',
     priority: 'medium',
+    category: 'software',
     status: 'in_progress',
     assign: true,
   },
@@ -53,6 +62,7 @@ const SEED_TICKETS: SeedTicket[] = [
     title: 'Request a second monitor for the support desk',
     description: 'Handling two queues side by side needs more screen space than the laptop offers.',
     priority: 'low',
+    category: 'hardware',
     status: 'open',
     assign: false,
   },
@@ -60,6 +70,7 @@ const SEED_TICKETS: SeedTicket[] = [
     title: 'Shift roster notifications arriving twice',
     description: 'Every roster change sends two identical push notifications a few seconds apart.',
     priority: 'urgent',
+    category: 'network',
     status: 'resolved',
     assign: true,
   },
@@ -67,6 +78,11 @@ const SEED_TICKETS: SeedTicket[] = [
 
 async function main(): Promise<void> {
   await connectToDatabase({ uri: env.MONGODB_URI, syncIndexes: true });
+
+  // Seeding is re-runnable: tickets are replaced wholesale so the demo data
+  // stays exactly what this script describes. Users are reused, not duplicated.
+  const removed = await TicketModel.deleteMany({}).exec();
+  if (removed.deletedCount > 0) console.log(`[seed] cleared ${removed.deletedCount} existing tickets`);
 
   const admin = await upsertUser(env.SEED_ADMIN_EMAIL, 'Ada Admin', 'admin', env.SEED_ADMIN_PASSWORD);
   const agent = await upsertUser('agent@wyzetalk.test', 'Gale Agent', 'agent', 'Agent123!');
@@ -83,9 +99,15 @@ async function main(): Promise<void> {
       title: seed.title,
       description: seed.description,
       priority: seed.priority,
+      category: seed.category,
       requesterId: requester.id,
       assigneeId: seed.assign ? agent.id : null,
     });
+
+    if (seed.overdue) {
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      await tickets.update(ticket.id, { dueAt: twoDaysAgo });
+    }
 
     // Walk the ticket to its seeded status through the real domain transitions,
     // so the lifecycle timestamps end up consistent.
