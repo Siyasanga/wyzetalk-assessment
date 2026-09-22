@@ -7,6 +7,7 @@
         {
           "local": true,
           "include": [
+            "pnpm-workspace.yaml",
             "packages/api/package.json",
             "packages/db/package.json",
             "packages/web/package.json"
@@ -15,7 +16,7 @@
       ]
     },
     "build": {
-      "commands": ["pnpm --filter @wyzetalk/db build", "..."]
+      "commands": ["pnpm --filter @wyzetalk/db build", "pnpm --filter @wyzetalk/web build"]
     }
   },
   "deploy": {
