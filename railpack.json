@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "build": {
+      "commands": [
+        "pnpm install --frozen-lockfile",
+        "pnpm --filter @wyzetalk/db build",
+        "pnpm --filter @wyzetalk/api build"
+      ]
+    }
+  },
+  "deploy": {
+    "startCommand": "node packages/api/dist/server.js"
+  }
+}
