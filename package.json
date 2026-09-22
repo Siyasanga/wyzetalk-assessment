@@ -7,12 +7,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/server build",
+    "build": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/api build && pnpm --filter @wyzetalk/web build",
     "dev": "pnpm --filter @wyzetalk/db build && pnpm -r --parallel dev",
-    "dev:server": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/server dev",
+    "dev:api": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/api dev",
+    "dev:web": "pnpm --filter @wyzetalk/db build && pnpm --filter @wyzetalk/web dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "seed": "pnpm --filter @wyzetalk/server seed",
+    "seed": "pnpm --filter @wyzetalk/api seed",
     "clean": "pnpm -r exec rm -rf dist"
   },
   "devDependencies": {
